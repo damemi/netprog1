@@ -1,6 +1,8 @@
 // Michael Dame, Chris Dower
 // Network Programming Project 1
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,11 +12,25 @@
 
 using namespace std;
 
+struct Node {
+  Node *left;
+  Node *right;
+  string ipAddr;
+  string subnet;
+  string gateway;
+  string intf;
+};
+
+Node rootNode;
+
 int main() {
   string line;
   ifstream routes("routes.txt");
   if(routes.is_open()) {
     string cidrAddr, subnet, gateway, intf, ipAddr;
+
+    rootNode.left = NULL;
+    rootNode.right = NULL;
     while(getline(routes, line)) {
       if(line.size() <= 0)
 	continue;
@@ -33,13 +49,19 @@ int main() {
       gateway = route[1];
       intf = route[2];
 
-      int addr = inet_addr(ipAddr.c_str());
-      printf("0x%08x\n", addr);
+      Node tableEntry;
+      tableEntry.ipAddr = ipAddr;
+      tableEntry.subnet = subnet;
+      tableEntry.gateway = gateway;
+      tableEntry.intf = intf;
 
-      for(int i=0; i<32; i++) {
-	if (addr & (1<<(31-i))) { 
+      struct sockaddr_in sa;
+      inet_pton(AF_INET, ipAddr.c_str(), &(sa.sin_addr));
+      int addr = htonl(sa.sin_addr.s_addr);
+      for(int i=0; i<atoi(subnet.c_str()); i++) {
+	if (addr & (1<<(31-i))) { // bit is 1
 	  cout << "1";
-	} else { 
+	} else { // bit is 0;
 	  cout << "0";
 	}
       }
