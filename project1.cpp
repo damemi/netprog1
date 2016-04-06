@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -13,7 +14,7 @@ int main() {
   string line;
   ifstream routes("routes.txt");
   if(routes.is_open()) {
-    string address, subnet, gateway, intf;
+    string cidrAddr, subnet, gateway, intf, ipAddr;
     while(getline(routes, line)) {
       if(line.size() <= 0)
 	continue;
@@ -25,13 +26,26 @@ int main() {
 	route.push_back(buf);
       }
       string::size_type n;
-      address = route[0];
-      n = address.find("/");
-      subnet = address.substr(n+1);
+      cidrAddr = route[0];
+      n = cidrAddr.find("/");
+      ipAddr = cidrAddr.substr(0,n);
+      subnet = cidrAddr.substr(n+1);
       gateway = route[1];
       intf = route[2];
 
-      cout << "ADDRESS: " << address << endl;
+      int addr = inet_addr(ipAddr.c_str());
+      printf("0x%08x\n", addr);
+
+      for(int i=0; i<32; i++) {
+	if (addr & (1<<(31-i))) { 
+	  cout << "1";
+	} else { 
+	  cout << "0";
+	}
+      }
+      cout << endl;
+
+      cout << "ADDRESS: " << ipAddr << endl;
       cout << "\tSUBNET: " << subnet << endl;
       cout << "\tGATEWAY: " << gateway << endl;
 
