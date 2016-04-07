@@ -173,6 +173,7 @@ int main() {
   ifstream pdus("pdus.txt");
   if(pdus.is_open()) {
     string intf, sourceAddr, destAddr, protocolNum, ttl, sourcePort, destPort;
+    int ttl_i;
 
     while(getline(pdus,line)) {
       if(line.size() <= 0)
@@ -191,8 +192,11 @@ int main() {
       ttl = route[4];
       sourcePort = route[5];
       destPort = route[6];
+      ttl_i = stoi(ttl);
 
-      cout << line << endl;
+      cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort << endl;
+      if(ttl_i - 1 <= 0 )
+        cout << " discarded (TTL expired)" << endl;
     }
     pdus.close();
   }
