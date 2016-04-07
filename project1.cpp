@@ -10,6 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <arpa/inet.h>
+#include <map>
 
 using namespace std;
 
@@ -35,6 +36,9 @@ struct Node {
 // Create root node of trie
 Node root;
 Node *rootNode = &root;
+
+//Create hash map of arp table
+map<string, string> arpTable;
 
 int main() {
 
@@ -162,9 +166,10 @@ int main() {
       }
       ip = route[0];
       mac = route[1];
+      arpTable[ip] = mac;
 
       cout << "IP: " << ip << endl;
-      cout << "\tMAC: " << mac << endl;
+      cout << "\tMAC: " << arpTable[ip] << endl;
     }
     arp.close();
   }
@@ -194,9 +199,12 @@ int main() {
       destPort = route[6];
       ttl_i = stoi(ttl);
 
-      cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort << endl;
-      if(ttl_i - 1 <= 0 )
+      cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort;
+      if(ttl_i - 1 <= 0 ){
         cout << " discarded (TTL expired)" << endl;
+      }else{
+        cout << " via ";
+      }
     }
     pdus.close();
   }
