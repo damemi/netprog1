@@ -210,7 +210,7 @@ int main() {
         Node* destNode = rootNode;
         Node* SourceNode = findSourceNode(sourceAddr);
         if(checkGateway(SourceNode, destAddr, destNode)){
-          cout << " directly connected (" << destNode->intf << "-" << arpTable[destNode->ipAddr] << ") ttl " << ttl_i << endl;
+          cout << " directly connected (" << SourceNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
         }
         cout << " via " << endl;
         //cout << SourceNode->gateway << endl;
@@ -225,6 +225,7 @@ int main() {
 bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
   bool directConnection = false;
   struct sockaddr_in ga, da;
+  Node* gatewayNode = rootNode;
   inet_pton(AF_INET, SourceNode->gateway.c_str(), &(ga.sin_addr));
   inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
   //Find node for destAddr
@@ -243,40 +244,23 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
 
   //Check if dest addr has direct connection to sourceAddr
   int sGatewayAddr = htonl(ga.sin_addr.s_addr);
-  //cout << "\n\tDest IP & Node: " << destNode->ipAddr << "\t" << destNode->subnet << endl;
-  int subnet;
-  if(destNode->subnet != ""){
-    subnet = stoi(destNode->subnet);
-  }else{
-    subnet = stoi(SourceNode->subnet);
+
+  for(int i=0; i<32; i++) {
+   if(sGatewayAddr & (1<<(31-i))) {
+     if(gatewayNode->right != NULL ){
+        gatewayNode = gatewayNode->right;
+     }else{ break; }
+   } else {
+     if(gatewayNode->left != NULL){
+        gatewayNode = gatewayNode->left;
+     }else{ break; }
+   }
+ }
+  if(gatewayNode == destNode){
+    destNode = gatewayNode;
+    directConnection = true;
   }
-  //cout << "\n" << subnet;
-  for(int i=0;i < subnet; i++){
-     /*if( (addr & (subnet-i)) == (sGatewayAddr & (subnet-i)) ){
-       cout << (sGatewayAddr & (subnet-i));
-       directConnection = true;
-     }else{
-       cout << "\n\t" << (sGatewayAddr & (subnet-i)) << "\n\t" << (addr & (subnet-i)) << endl;
-       directConnection = false;
-       break;
-     }*/
-     if(addr & (1<<(31-i))){
-       if(sGatewayAddr & (1<<(31-i))){
-         directConnection = true;
-       }else{
-         directConnection = false;
-         break;
-       }
-     }else{
-       if(sGatewayAddr & (0<<(31-i))){
-         directConnection = true;
-       }else{
-         directConnection = false;
-         break;
-       }
-     }
-  }
-  //cout << "\t" << directConnection << endl;
+
   return directConnection;
 }
 
