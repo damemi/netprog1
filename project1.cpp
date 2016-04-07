@@ -48,7 +48,7 @@ int main() {
     rootNode->right = NULL;
     while(getline(routes, line)) {
       if(line.size() <= 0)
-	continue;
+	     continue;
 
       // Creates a vector to store the data for each line
       // TODO: Should have some error checking
@@ -59,7 +59,7 @@ int main() {
       string buf;
       vector<string> route;
       while(ss >> buf) {
-	route.push_back(buf);
+	       route.push_back(buf);
       }
       string::size_type n;
 
@@ -92,32 +92,32 @@ int main() {
 
       // Build the trie
       // Make a new pointer node, take the bits of the address and
-      // make that pointer either the left or right child based on the 
+      // make that pointer either the left or right child based on the
       // current bit in the address.
       // Only goes as deep as the subnet mask size in the node's address
       // (See lecture 2 slide 22 for example of what I mean)
       Node *ptr = rootNode;
       for(int i=0; i<atoi(subnet.c_str()); i++) {
-	Node *newNode = new Node();
-	if (addr & (1<<(31-i))) { // bit is 1
-	  if(ptr->right == NULL) {
-	    ptr->right = newNode;
-	  } else {
-	    ptr = ptr->right;
-	    continue;
-	  }
+      	Node *newNode = new Node();
+      	if (addr & (1<<(31-i))) { // bit is 1
+      	  if(ptr->right == NULL) {
+      	    ptr->right = newNode;
+      	  } else {
+      	    ptr = ptr->right;
+      	    continue;
+      	  }
 
-	} else { // bit is 0;
-	  if(ptr->left == NULL) {
-	    ptr->left = newNode;
-	  } else {
-	    ptr = ptr->left;
-	    continue;
-	  }
-	}
-	ptr = newNode;
+      	} else { // bit is 0;
+      	  if(ptr->left == NULL) {
+      	    ptr->left = newNode;
+      	  } else {
+      	    ptr = ptr->left;
+      	    continue;
+      	  }
+      	}
+      	ptr = newNode;
       }
-      
+
       // Set routing table details
       ptr->ipAddr = ipAddr;
       ptr->subnet = subnet;
@@ -152,17 +152,17 @@ int main() {
     string ip, mac;
     while(getline(arp, line)) {
       if(line.size() <= 0)
-	continue;
+	     continue;
 
       stringstream ss(line);
       string buf;
       vector<string> route;
       while(ss >> buf) {
-	route.push_back(buf);
+	       route.push_back(buf);
       }
       ip = route[0];
       mac = route[1];
-      
+
       cout << "IP: " << ip << endl;
       cout << "\tMAC: " << mac << endl;
     }
@@ -176,13 +176,13 @@ int main() {
 
     while(getline(pdus,line)) {
       if(line.size() <= 0)
-	continue;
+        continue;
 
       stringstream ss(line);
       string buf;
       vector<string> route;
       while(ss >> buf) {
-	route.push_back(buf);
+	       route.push_back(buf);
       }
       intf = route[0];
       sourceAddr = route[1];
