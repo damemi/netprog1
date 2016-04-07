@@ -40,6 +40,9 @@ Node *rootNode = &root;
 //Create hash map of arp table
 map<string, string> arpTable;
 
+bool checkGateway(Node* SourceNode, string destAddr, Node* destNode);
+Node* findSourceNode(string sourceAddr);
+
 int main() {
 
   // Open routing table entries file
@@ -132,9 +135,9 @@ int main() {
   }
 
   // DEBUG: Just testing the trie with some routing table entries from pdus.txt
-  /*
+/*
   struct sockaddr_in sa2;
-  inet_pton(AF_INET, "10.3.0.1", &(sa2.sin_addr));
+  inet_pton(AF_INET, "10.4.0.1", &(sa2.sin_addr));
   int addr2 = htonl(sa2.sin_addr.s_addr);
   Node * newPtr = rootNode;
   for(int i=0; i<16; i++) {
@@ -168,8 +171,8 @@ int main() {
       mac = route[1];
       arpTable[ip] = mac;
 
-      cout << "IP: " << ip << endl;
-      cout << "\tMAC: " << arpTable[ip] << endl;
+      //cout << "IP: " << ip << endl;
+      //cout << "\tMAC: " << arpTable[ip] << endl;
     }
     arp.close();
   }
@@ -198,16 +201,103 @@ int main() {
       sourcePort = route[5];
       destPort = route[6];
       ttl_i = stoi(ttl);
+      ttl_i--;
 
       cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort;
       if(ttl_i - 1 <= 0 ){
         cout << " discarded (TTL expired)" << endl;
       }else{
-        cout << " via ";
+        Node* destNode = rootNode;
+        Node* SourceNode = findSourceNode(sourceAddr);
+        if(checkGateway(SourceNode, destAddr, destNode)){
+          cout << " directly connected (" << destNode->intf << "-" << arpTable[destNode->ipAddr] << ") ttl " << ttl_i << endl;
+        }
+        cout << " via " << endl;
+        //cout << SourceNode->gateway << endl;
       }
     }
     pdus.close();
   }
 
   return 0;
+}
+
+bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
+  bool directConnection = false;
+  struct sockaddr_in ga, da;
+  inet_pton(AF_INET, SourceNode->gateway.c_str(), &(ga.sin_addr));
+  inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
+  //Find node for destAddr
+  int addr = htonl(da.sin_addr.s_addr);
+  for(int i=0; i<32; i++) {
+   if(addr & (1<<(31-i))) {
+     if(destNode->right != NULL ){
+        destNode = destNode->right;
+     }else{ break; }
+   } else {
+     if(destNode->left != NULL){
+        destNode = destNode->left;
+     }else{ break; }
+   }
+  }
+
+  //Check if dest addr has direct connection to sourceAddr
+  int sGatewayAddr = htonl(ga.sin_addr.s_addr);
+  //cout << "\n\tDest IP & Node: " << destNode->ipAddr << "\t" << destNode->subnet << endl;
+  int subnet;
+  if(destNode->subnet != ""){
+    subnet = stoi(destNode->subnet);
+  }else{
+    subnet = stoi(SourceNode->subnet);
+  }
+  //cout << "\n" << subnet;
+  for(int i=0;i < subnet; i++){
+     /*if( (addr & (subnet-i)) == (sGatewayAddr & (subnet-i)) ){
+       cout << (sGatewayAddr & (subnet-i));
+       directConnection = true;
+     }else{
+       cout << "\n\t" << (sGatewayAddr & (subnet-i)) << "\n\t" << (addr & (subnet-i)) << endl;
+       directConnection = false;
+       break;
+     }*/
+     if(addr & (1<<(31-i))){
+       if(sGatewayAddr & (1<<(31-i))){
+         directConnection = true;
+       }else{
+         directConnection = false;
+         break;
+       }
+     }else{
+       if(sGatewayAddr & (0<<(31-i))){
+         directConnection = true;
+       }else{
+         directConnection = false;
+         break;
+       }
+     }
+  }
+  //cout << "\t" << directConnection << endl;
+  return directConnection;
+}
+
+Node* findSourceNode(string sourceAddr){
+  struct sockaddr_in sa;
+  string nextGateway, sourceGateway;
+  inet_pton(AF_INET, sourceAddr.c_str(), &(sa.sin_addr));
+  int addr = htonl(sa.sin_addr.s_addr);
+  Node* currNode = rootNode;
+
+  for(int i=0; i<32; i++) {
+   if(addr & (1<<(31-i))) {
+     if(currNode->right != NULL ){
+        currNode = currNode->right;
+     }else{ break; }
+   } else {
+     if(currNode->left != NULL){
+        currNode = currNode->left;
+     }else{ break; }
+   }
+  }
+  nextGateway = currNode->gateway;
+  return currNode;
 }
