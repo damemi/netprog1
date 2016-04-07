@@ -208,11 +208,29 @@ int main() {
         cout << " discarded (TTL expired)" << endl;
       }else{
         Node* destNode = rootNode;
+        //Find node for destAddr
+        struct sockaddr_in da;
+        inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
+        int addr = htonl(da.sin_addr.s_addr);
+        for(int i=0; i<32; i++) {
+         if(addr & (1<<(31-i))) {
+           if(destNode->right != NULL ){
+              destNode = destNode->right;
+           }else{ break; }
+         } else {
+           if(destNode->left != NULL){
+              destNode = destNode->left;
+           }else{ break; }
+         }
+       }
+
         Node* SourceNode = findSourceNode(sourceAddr);
         if(checkGateway(SourceNode, destAddr, destNode)){
-          cout << " directly connected (" << SourceNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
+          cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
+          //cout << destNode->ipAddr << endl;
+        }else{
+          cout << " via " << destNode->gateway << "(" << destNode->intf << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
         }
-        cout << " via " << endl;
         //cout << SourceNode->gateway << endl;
       }
     }
@@ -223,24 +241,10 @@ int main() {
 }
 
 bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
-  bool directConnection = false;
-  struct sockaddr_in ga, da;
+  bool directConnection = false, gatewayConnection = false;
+  struct sockaddr_in ga;
   Node* gatewayNode = rootNode;
   inet_pton(AF_INET, SourceNode->gateway.c_str(), &(ga.sin_addr));
-  inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
-  //Find node for destAddr
-  int addr = htonl(da.sin_addr.s_addr);
-  for(int i=0; i<32; i++) {
-   if(addr & (1<<(31-i))) {
-     if(destNode->right != NULL ){
-        destNode = destNode->right;
-     }else{ break; }
-   } else {
-     if(destNode->left != NULL){
-        destNode = destNode->left;
-     }else{ break; }
-   }
-  }
 
   //Check if dest addr has direct connection to sourceAddr
   int sGatewayAddr = htonl(ga.sin_addr.s_addr);
@@ -257,10 +261,18 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
    }
  }
   if(gatewayNode == destNode){
-    destNode = gatewayNode;
     directConnection = true;
+  }else{
+    gatewayConnection = true;
   }
-
+  if(gatewayConnection){
+    cout << "\n" << SourceNode->ipAddr << " : ";
+    cout << SourceNode->gateway << endl;
+    cout << destNode->ipAddr << endl;
+    destNode = gatewayNode;
+    cout << gatewayNode->ipAddr << endl;
+  }
+  //cout << "\n" << directConnection + gatewayConnection << endl;
   return directConnection;
 }
 
