@@ -237,8 +237,7 @@ if(pdus.is_open()) {
         cout << " via " << destNode->gateway << "(" << destNode->intf;
         if(destNode->intf.find("ppp") != 0){
           cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
-          cout << destNode->intf.find("ppp") << endl;
-        }else{ cout << ") ttle " << ttl_i << endl; }
+        }else{ cout << ") ttl " << ttl_i << endl; }
 
       }
       //cout << SourceNode->gateway << endl;
