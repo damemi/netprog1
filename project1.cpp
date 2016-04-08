@@ -207,15 +207,18 @@ int main() {
       if(ttl_i - 1 <= 0 ){
         cout << " discarded (TTL expired)" << endl;
       }else{
-        Node* destNode = rootNode;
+        Node* trackerNode, *destNode = rootNode;
         //Find node for destAddr
         struct sockaddr_in da;
         inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
         int addr = htonl(da.sin_addr.s_addr);
         for(int i=0; i<32; i++) {
          if(addr & (1<<(31-i))) {
+           if(destNode->ipAddr != ""){
+             trackerNode = destNode;
+           }
            if(destNode->right != NULL ){
-              destNode = destNode->right;
+             destNode = destNode->right;
            }else{ break; }
          } else {
            if(destNode->left != NULL){
@@ -223,13 +226,19 @@ int main() {
            }else{ break; }
          }
        }
-
+       if(destNode->ipAddr == ""){
+         destNode = trackerNode;
+       }
         Node* SourceNode = findSourceNode(sourceAddr);
         if(checkGateway(SourceNode, destAddr, destNode)){
           cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
           //cout << destNode->ipAddr << endl;
         }else{
-          cout << " via " << destNode->gateway << "(" << destNode->intf << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
+          cout << " via " << destNode->gateway << "(" << destNode->intf;
+          if(destNode->ipAddr != ""){
+            cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
+          }else{ cout << ") ttle " << ttl_i << endl; }
+
         }
         //cout << SourceNode->gateway << endl;
       }
@@ -266,11 +275,7 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
     gatewayConnection = true;
   }
   if(gatewayConnection){
-    cout << "\n" << SourceNode->ipAddr << " : ";
-    cout << SourceNode->gateway << endl;
-    cout << destNode->ipAddr << endl;
     destNode = gatewayNode;
-    cout << gatewayNode->ipAddr << endl;
   }
   //cout << "\n" << directConnection + gatewayConnection << endl;
   return directConnection;
