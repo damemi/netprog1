@@ -55,7 +55,7 @@ int main() {
     rootNode->right = NULL;
     while(getline(routes, line)) {
       if(line.size() <= 0)
-	     continue;
+      continue;
 
       // Creates a vector to store the data for each line
       // TODO: Should have some error checking
@@ -66,7 +66,7 @@ int main() {
       string buf;
       vector<string> route;
       while(ss >> buf) {
-	       route.push_back(buf);
+        route.push_back(buf);
       }
       string::size_type n;
 
@@ -88,187 +88,194 @@ int main() {
       // DEBUG: Print ip address in binary
       /*
       for(int i=0; i<32; i++) {
-	     if(addr & (1<<(31-i))) {
-	      cout << "1";
-	     } else {
-	      cout << "0";
-	     }
-      }
-      cout << endl;
-      */
-
-      // Build the trie
-      // Make a new pointer node, take the bits of the address and
-      // make that pointer either the left or right child based on the
-      // current bit in the address.
-      // Only goes as deep as the subnet mask size in the node's address
-      // (See lecture 2 slide 22 for example of what I mean)
-      Node *ptr = rootNode;
-      for(int i=0; i<atoi(subnet.c_str()); i++) {
-      	Node *newNode = new Node();
-      	if (addr & (1<<(31-i))) { // bit is 1
-      	  if(ptr->right == NULL) {
-      	    ptr->right = newNode;
-      	  } else {
-      	    ptr = ptr->right;
-      	    continue;
-      	  }
-
-      	} else { // bit is 0;
-      	  if(ptr->left == NULL) {
-      	    ptr->left = newNode;
-      	  } else {
-      	    ptr = ptr->left;
-      	    continue;
-      	  }
-      	}
-      	ptr = newNode;
-      }
-
-      // Set routing table details
-      ptr->ipAddr = ipAddr;
-      ptr->subnet = subnet;
-      ptr->gateway = gateway;
-      ptr->intf = intf;
-    }
-    routes.close();
-  }
-
-  // DEBUG: Just testing the trie with some routing table entries from pdus.txt
-/*
-  struct sockaddr_in sa2;
-  inet_pton(AF_INET, "10.4.0.1", &(sa2.sin_addr));
-  int addr2 = htonl(sa2.sin_addr.s_addr);
-  Node * newPtr = rootNode;
-  for(int i=0; i<16; i++) {
-    if(addr2 & (1<<(31-i))) {
-      if(newPtr->right != NULL)
-	newPtr = newPtr->right;
+      if(addr & (1<<(31-i))) {
+      cout << "1";
     } else {
-      if(newPtr->left != NULL)
-	newPtr = newPtr->left;
-    }
-    if(strlen((newPtr->ipAddr).c_str()) > 0)
-      cout << newPtr->ipAddr << endl;
+    cout << "0";
   }
-  */
+}
+cout << endl;
+*/
 
-  // Read in ARP data file to build ARP table
-  ifstream arp("arp.txt");
-  if(arp.is_open()) {
-    string ip, mac;
-    while(getline(arp, line)) {
-      if(line.size() <= 0)
-	     continue;
-
-      stringstream ss(line);
-      string buf;
-      vector<string> route;
-      while(ss >> buf) {
-	       route.push_back(buf);
-      }
-      ip = route[0];
-      mac = route[1];
-      arpTable[ip] = mac;
-
-      //cout << "IP: " << ip << endl;
-      //cout << "\tMAC: " << arpTable[ip] << endl;
+// Build the trie
+// Make a new pointer node, take the bits of the address and
+// make that pointer either the left or right child based on the
+// current bit in the address.
+// Only goes as deep as the subnet mask size in the node's address
+// (See lecture 2 slide 22 for example of what I mean)
+Node *ptr = rootNode;
+for(int i=0; i<atoi(subnet.c_str()); i++) {
+  Node *newNode = new Node();
+  if (addr & (1<<(31-i))) { // bit is 1
+    if(ptr->right == NULL) {
+      ptr->right = newNode;
+    } else {
+      ptr = ptr->right;
+      continue;
     }
-    arp.close();
+
+  } else { // bit is 0;
+    if(ptr->left == NULL) {
+      ptr->left = newNode;
+    } else {
+      ptr = ptr->left;
+      continue;
+    }
   }
+  ptr = newNode;
+}
 
-  // Read in PDU file
-  ifstream pdus("pdus.txt");
-  if(pdus.is_open()) {
-    string intf, sourceAddr, destAddr, protocolNum, ttl, sourcePort, destPort;
-    int ttl_i;
+// Set routing table details
+ptr->ipAddr = ipAddr;
+ptr->subnet = subnet;
+ptr->gateway = gateway;
+ptr->intf = intf;
+}
+routes.close();
+}
 
-    while(getline(pdus,line)) {
-      if(line.size() <= 0)
-        continue;
+// DEBUG: Just testing the trie with some routing table entries from pdus.txt
+/*
+struct sockaddr_in sa2;
+inet_pton(AF_INET, "10.4.0.1", &(sa2.sin_addr));
+int addr2 = htonl(sa2.sin_addr.s_addr);
+Node * newPtr = rootNode;
+for(int i=0; i<16; i++) {
+if(addr2 & (1<<(31-i))) {
+if(newPtr->right != NULL)
+newPtr = newPtr->right;
+} else {
+if(newPtr->left != NULL)
+newPtr = newPtr->left;
+}
+if(strlen((newPtr->ipAddr).c_str()) > 0)
+cout << newPtr->ipAddr << endl;
+}
+*/
 
-      stringstream ss(line);
-      string buf;
-      vector<string> route;
-      while(ss >> buf) {
-	       route.push_back(buf);
-      }
-      intf = route[0];
-      sourceAddr = route[1];
-      destAddr = route[2];
-      protocolNum = route[3];
-      ttl = route[4];
-      sourcePort = route[5];
-      destPort = route[6];
-      ttl_i = stoi(ttl);
-      ttl_i--;
+// Read in ARP data file to build ARP table
+ifstream arp("arp.txt");
+if(arp.is_open()) {
+  string ip, mac;
+  while(getline(arp, line)) {
+    if(line.size() <= 0)
+    continue;
 
-      cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort;
-      if(ttl_i - 1 <= 0 ){
-        cout << " discarded (TTL expired)" << endl;
-      }else{
-        Node* trackerNode, *destNode = rootNode;
-        //Find node for destAddr
-        struct sockaddr_in da;
-        inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
-        int addr = htonl(da.sin_addr.s_addr);
-        for(int i=0; i<32; i++) {
-         if(addr & (1<<(31-i))) {
-           if(destNode->ipAddr != ""){
-             trackerNode = destNode;
-           }
-           if(destNode->right != NULL ){
-             destNode = destNode->right;
-           }else{ break; }
-         } else {
-           if(destNode->left != NULL){
-              destNode = destNode->left;
-           }else{ break; }
-         }
-       }
-       if(destNode->ipAddr == ""){
-         destNode = trackerNode;
-       }
-        Node* SourceNode = findSourceNode(sourceAddr);
-        if(checkGateway(SourceNode, destAddr, destNode)){
-          cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
-          //cout << destNode->ipAddr << endl;
-        }else{
-          cout << " via " << destNode->gateway << "(" << destNode->intf;
+    stringstream ss(line);
+    string buf;
+    vector<string> route;
+    while(ss >> buf) {
+      route.push_back(buf);
+    }
+    ip = route[0];
+    mac = route[1];
+    arpTable[ip] = mac;
+
+    //cout << "IP: " << ip << endl;
+    //cout << "\tMAC: " << arpTable[ip] << endl;
+  }
+  arp.close();
+}
+
+// Read in PDU file
+ifstream pdus("pdus.txt");
+if(pdus.is_open()) {
+  string intf, sourceAddr, destAddr, protocolNum, ttl, sourcePort, destPort;
+  int ttl_i;
+
+  while(getline(pdus,line)) {
+    if(line.size() <= 0)
+    continue;
+
+    stringstream ss(line);
+    string buf;
+    vector<string> route;
+    while(ss >> buf) {
+      route.push_back(buf);
+    }
+    intf = route[0];
+    sourceAddr = route[1];
+    destAddr = route[2];
+    protocolNum = route[3];
+    ttl = route[4];
+    sourcePort = route[5];
+    destPort = route[6];
+    ttl_i = stoi(ttl);
+    ttl_i--;
+
+    cout << sourceAddr << ":" << sourcePort << "->" << destAddr << ":" << destPort;
+    if(ttl_i - 1 <= 0 ){
+      cout << " discarded (TTL expired)" << endl;
+    }else{
+      Node* trackerNode, *destNode = rootNode;
+      //Find node for destAddr
+      struct sockaddr_in da;
+      inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
+      int addr = htonl(da.sin_addr.s_addr);
+      for(int i=0; i<32; i++) {
+        if(addr & (1<<(31-i))) {
           if(destNode->ipAddr != ""){
-            cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
-          }else{ cout << ") ttle " << ttl_i << endl; }
-
+            trackerNode = destNode;
+          }
+          if(destNode->right != NULL ){
+            destNode = destNode->right;
+          }else{ break; }
+        } else {
+          if(destNode->left != NULL){
+            destNode = destNode->left;
+          }else{ break; }
         }
-        //cout << SourceNode->gateway << endl;
       }
-    }
-    pdus.close();
-  }
+      if(destNode->ipAddr == ""){
+        destNode = trackerNode;
+      }
+      Node* SourceNode = findSourceNode(sourceAddr);
+      if(checkGateway(SourceNode, destAddr, destNode)){
+        cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
+        //cout << destNode->ipAddr << endl;
+      }else{
+        cout << " via " << destNode->gateway << "(" << destNode->intf;
+        if(destNode->intf.find("ppp") != 0){
+          cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
+          cout << destNode->intf.find("ppp") << endl;
+        }else{ cout << ") ttle " << ttl_i << endl; }
 
-  return 0;
+      }
+      //cout << SourceNode->gateway << endl;
+    }
+  }
+  pdus.close();
+}
+
+return 0;
 }
 
 bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
   bool directConnection = false, gatewayConnection = false;
   struct sockaddr_in ga;
-  Node* gatewayNode = rootNode;
+  Node* trackerNode, * gatewayNode = rootNode;
   inet_pton(AF_INET, SourceNode->gateway.c_str(), &(ga.sin_addr));
 
   //Check if dest addr has direct connection to sourceAddr
   int sGatewayAddr = htonl(ga.sin_addr.s_addr);
 
   for(int i=0; i<32; i++) {
-   if(sGatewayAddr & (1<<(31-i))) {
-     if(gatewayNode->right != NULL ){
+    if(sGatewayAddr & (1<<(31-i))) {
+      if(gatewayNode->ipAddr != ""){
+        trackerNode = gatewayNode;
+      }
+      if(gatewayNode->right != NULL ){
         gatewayNode = gatewayNode->right;
-     }else{ break; }
-   } else {
-     if(gatewayNode->left != NULL){
+      }else{ break; }
+    } else {
+      if(gatewayNode->left != NULL){
         gatewayNode = gatewayNode->left;
-     }else{ break; }
-   }
- }
+      }else{ break; }
+    }
+  }
+  if(destNode->ipAddr == ""){
+    destNode = trackerNode;
+  }
   if(gatewayNode == destNode){
     directConnection = true;
   }else{
@@ -289,15 +296,15 @@ Node* findSourceNode(string sourceAddr){
   Node* currNode = rootNode;
 
   for(int i=0; i<32; i++) {
-   if(addr & (1<<(31-i))) {
-     if(currNode->right != NULL ){
+    if(addr & (1<<(31-i))) {
+      if(currNode->right != NULL ){
         currNode = currNode->right;
-     }else{ break; }
-   } else {
-     if(currNode->left != NULL){
+      }else{ break; }
+    } else {
+      if(currNode->left != NULL){
         currNode = currNode->left;
-     }else{ break; }
-   }
+      }else{ break; }
+    }
   }
   nextGateway = currNode->gateway;
   return currNode;
