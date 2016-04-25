@@ -28,9 +28,9 @@ struct Node {
   Node *left = NULL;
   Node *right = NULL;
   string ipAddr = "";
-  string subnet;
-  string gateway;
-  string intf;
+  string subnet = "";
+  string gateway = "";
+  string intf = "";
 };
 
 // Create root node of trie
@@ -207,7 +207,8 @@ if(pdus.is_open()) {
     if(ttl_i - 1 <= 0 ){
       cout << " discarded (TTL expired)" << endl;
     }else{
-      Node* trackerNode, *destNode = rootNode;
+      Node* trackerNode = NULL;
+      Node* destNode = rootNode;
       //Find node for destAddr
       struct sockaddr_in da;
       inet_pton(AF_INET, destAddr.c_str(), &(da.sin_addr));
@@ -216,6 +217,7 @@ if(pdus.is_open()) {
         if(addr & (1<<(31-i))) {
           if(destNode->ipAddr != ""){
             trackerNode = destNode;
+            cout << "Found trackerNode" << endl;
           }
           if(destNode->right != NULL ){
             destNode = destNode->right;
@@ -226,19 +228,26 @@ if(pdus.is_open()) {
           }else{ break; }
         }
       }
-      if(destNode->ipAddr == ""){
+      if(destNode->ipAddr == "" && trackerNode !=NULL){
         destNode = trackerNode;
       }
       Node* SourceNode = findSourceNode(sourceAddr);
-      if(checkGateway(SourceNode, destAddr, destNode)){
-        cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
-        //cout << destNode->ipAddr << endl;
+      //if(SourceNode!= NULL) { cout << "Source Node Found" << endl; }
+      if(destNode->ipAddr==""){
+        cout << " discarded (destination unreachable)" << endl;
       }else{
-        cout << " via " << destNode->gateway << "(" << destNode->intf;
-        if(destNode->intf.find("ppp") != 0){
-          cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
-        }else{ cout << ") ttl " << ttl_i << endl; }
-
+        if(checkGateway(SourceNode, destAddr, destNode)){
+          cout << " directly connected (" << destNode->intf << "-" << arpTable[destAddr] << ") ttl " << ttl_i << endl;
+          //cout << destNode->ipAddr << endl;
+        }else{
+          if(destNode==NULL){
+            cout << "failure" << endl;
+          }
+          cout << " via " << destNode->gateway << "(" << destNode->intf;
+          if(destNode->intf.find("ppp") != 0){
+            cout << "-" << arpTable[destNode->gateway] << ") ttl " << ttl_i << endl;
+          }else{ cout << ") ttl " << ttl_i << endl; }
+        }
       }
       //cout << SourceNode->gateway << endl;
     }
@@ -254,14 +263,14 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
   struct sockaddr_in ga;
   Node* trackerNode, * gatewayNode = rootNode;
   inet_pton(AF_INET, SourceNode->gateway.c_str(), &(ga.sin_addr));
-
+  //cout << "\nGateway: " << SourceNode->gateway << endl;
   //Check if dest addr has direct connection to sourceAddr
   int sGatewayAddr = htonl(ga.sin_addr.s_addr);
-
   for(int i=0; i<32; i++) {
     if(sGatewayAddr & (1<<(31-i))) {
       if(gatewayNode->ipAddr != ""){
         trackerNode = gatewayNode;
+        cout << trackerNode->ipAddr << endl;
       }
       if(gatewayNode->right != NULL ){
         gatewayNode = gatewayNode->right;
@@ -272,17 +281,31 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
       }else{ break; }
     }
   }
-  if(destNode->ipAddr == ""){
-    destNode = trackerNode;
-  }
-  if(gatewayNode == destNode){
-    directConnection = true;
-  }else{
-    gatewayConnection = true;
-  }
-  if(gatewayConnection){
-    destNode = gatewayNode;
-  }
+  //if(gatewayNode == NULL){ cout << "gatewayNode is null" << endl; }
+  /*if(gatewayNode->ipAddr == ""){
+    //cout << "gatewayNode empty" << endl;
+    if(destNode!=NULL){
+      //cout << destNode << endl;
+      cout << "\n " << destNode->ipAddr << "\t-->\t" << destNode->gateway << endl;
+    }
+    //cout << " discarded (destination unreachable)" << endl;
+
+  }*/
+  if(trackerNode!=NULL && gatewayNode!=NULL){
+    if(destNode->ipAddr == ""){
+      destNode = trackerNode;
+      //cout <<trackerNode->ipAddr << endl;
+    }
+    if(gatewayNode == destNode){
+      directConnection = true;
+    }else{
+      gatewayConnection = true;
+    }
+    if(gatewayConnection){
+      destNode = gatewayNode;
+    }
+  }//else{ cout << "failure" << endl; }
+  //cout << ": finished " << endl;
   //cout << "\n" << directConnection + gatewayConnection << endl;
   return directConnection;
 }
