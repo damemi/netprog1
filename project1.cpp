@@ -217,7 +217,7 @@ if(pdus.is_open()) {
         if(addr & (1<<(31-i))) {
           if(destNode->ipAddr != ""){
             trackerNode = destNode;
-            cout << "Found trackerNode" << endl;
+            //cout << "Found trackerNode" << endl;
           }
           if(destNode->right != NULL ){
             destNode = destNode->right;
@@ -270,7 +270,7 @@ bool checkGateway(Node* SourceNode, string destAddr, Node* destNode){
     if(sGatewayAddr & (1<<(31-i))) {
       if(gatewayNode->ipAddr != ""){
         trackerNode = gatewayNode;
-        cout << trackerNode->ipAddr << endl;
+        //cout << trackerNode->ipAddr << endl;
       }
       if(gatewayNode->right != NULL ){
         gatewayNode = gatewayNode->right;
