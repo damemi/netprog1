@@ -223,6 +223,9 @@ if(pdus.is_open()) {
             destNode = destNode->right;
           }else{ break; }
         } else {
+	  if(destNode->ipAddr != ""){
+	    trackerNode = destNode;
+          }
           if(destNode->left != NULL){
             destNode = destNode->left;
           }else{ break; }
@@ -233,7 +236,8 @@ if(pdus.is_open()) {
       }
       Node* SourceNode = findSourceNode(sourceAddr);
       //if(SourceNode!= NULL) { cout << "Source Node Found" << endl; }
-      if(destNode->ipAddr==""){
+      //if(destNode->ipAddr==""){
+      if(destNode->intf == "" /*|| destNode->gateway.find("0.0.0.0") != string::npos*/) {
         cout << " discarded (destination unreachable)" << endl;
       }else{
         if(checkGateway(SourceNode, destAddr, destNode)){
